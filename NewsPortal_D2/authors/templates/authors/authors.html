@@ -1,0 +1,7 @@
+{% extends 'flatpages/default.html' %}
+{% load censor %}
+
+
+{% block title %}
+Post {{post.title|my_censor}} - type {{ post.type }}
+{% endblock title %}

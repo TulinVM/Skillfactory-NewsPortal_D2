@@ -3,6 +3,8 @@ from django.conf import settings
 from django.db.models import Sum
 from django.contrib.auth.models import User
 
+from . import TYPE_CHOICES
+
 
 class Author(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -14,10 +16,9 @@ class Author(models.Model):
         post_comments = sum(post_comments)
         posts = self.posts.values('rating')
         posts = sum(p['rating'] for p in posts) * 3
-        comments = self.user.db_comment.values('rating')
+        comments = self.user.comments.values('rating')
         comments = sum(c['rating'] for c in comments)
         self.rating = posts + comments + post_comments
-
 
 class Category(models.Model):
     name = models.CharField(unique=True, max_length=256)
@@ -29,15 +30,18 @@ class Post(models.Model):
         on_delete=models.CASCADE,
     )
     categories = models.ManyToManyField(Category)
-    type = models.CharField(max_length=1)
+    type = models.CharField(max_length=1, choices=TYPE_CHOICES)
     title = models.CharField(unique=True, max_length=256)
     text = models.TextField()
     rating = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
+
     def preview(self):
         return self.text[:124] + '...' if len(self.text) > 124 else self.text
+
+
 
     def like(self):
         self.rating += 1
@@ -46,13 +50,16 @@ class Post(models.Model):
         self.rating -= 1
 
 
+
+
+
 class PostCategory(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE,)
     category = models.ForeignKey(Category, on_delete=models.CASCADE,)
 
 
 class Comment(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_comments')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE,related_name='post_comments' )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, related_name='comments',
         on_delete=models.CASCADE,
@@ -61,6 +68,7 @@ class Comment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     rating = models.IntegerField(default=0)
+
 
     def like(self):
         self.rating += 1
