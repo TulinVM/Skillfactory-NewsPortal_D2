@@ -58,7 +58,7 @@ ROOT_URLCONF = 'NewsPortal_D2.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / '/authors/templates/authors'],
+        'DIRS': [BASE_DIR / 'authors/templates/authors'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
