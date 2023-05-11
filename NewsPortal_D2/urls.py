@@ -18,5 +18,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('authors.urls')),
+    path("accounts/", include("allauth.urls")),  # Оставили только allauth
+    path('posts/', include('simpleapp.urls')),
    ]
