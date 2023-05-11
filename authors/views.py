@@ -1,5 +1,6 @@
 ################# news from
 # импорты django
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -9,9 +10,12 @@ from django.urls import reverse_lazy
 # с использованием библиотеки allauth
 from django.shortcuts import redirect
 from pyexpat.errors import messages
+
+# from .forms import AddPostForm
 # from project.simpleapp.models import Product
 # импорты проекта
-from .models import Post, Author, Category
+from .models import Post, Author
+from .forms import PostForm
 from django.contrib.auth.models import User
 from .filters import PostFilter
 # Настройки включения перевода
@@ -19,6 +23,8 @@ from django.utils.translation import gettext as _ # импортируем фу�
 # ограничение на количество публикаций в день для автора
 LIMIT_POSTS = 20
 # пример создания вьюшки через класс - исключительно в целях тестирования реализации перевода
+
+
 class IndexTrans(View):
     def get(self, request):
         string = _("Test string")
@@ -42,6 +48,13 @@ class IndexTimezone(View):
     def post(self, request):
         request.session['django_timezone'] = request.POST['timezone']
         return redirect('index_test')
+
+#######
+menu = [{'title': "О сайте", 'url_name': 'about'},
+        {'title': "Добавить статью", 'url_name': 'add_page'},
+        {'title': "Обратная связь", 'url_name': 'contact'},
+        {'title': "Войти", 'url_name': 'login'}
+]
 
 
 class AuthorList(ListView):
@@ -70,12 +83,24 @@ class PostsList(ListView):
         context['filterset'] = self.filterset
         return context
 
+# class PostDetail(DetailView):
+#     model = Post
+#     template_name = 'post.html'
+#     context_object_name = 'post'
+#     queryset = Post.objects.all()
+
+#################
 class PostDetail(DetailView):
     model = Post
     template_name = 'post.html'
+    #slug_url_kwarg = 'post_slug'
     context_object_name = 'post'
 
-
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = context['post']
+        context['menu'] = menu
+        return context
 
 
 
@@ -97,23 +122,47 @@ class PostsSearch(ListView):
         return context
 
 
-class NewsCreate(CreateView):
+class NewsCreate(LoginRequiredMixin, CreateView):
+    permission_required = ('simpleapp.add_post',)
+    form_class = PostForm
     model = Post
-    fields = ['author', 'title', 'text']
-    success_url = reverse_lazy('authors:posts')
+    template_name = 'post_edit.html'
 
-    def form_valid(self, form):
-        author = Author.objects.filter(user=self.request.user.id).first()
-        if not author:
-            author = Author.objects.first()
-            messages.error(self.request, "You not author, we get first.")
-        else:
-            messages.success(self.request, "The task was created successfully.")
-        form.instance.author = author
-        form.instance.type = 'N'
-
-        return super(NewsCreate, self).form_valid(form)
-
+    # def form_valid(self, form):
+    #     author = Author.objects.filter(user=self.request.user.id).first()
+    #     if not author:
+    #         author = Author.objects.first()
+    #         messages.error(self.request, "You not author, we get first.")
+    #     else:
+    #         messages.success(self.request, "The task was created successfully.")
+    #     form.instance.author = author
+    #     form.instance.type = 'N'
+    #
+    #     return super(NewsCreate, self).form_valid(form)
+################
+# class NewsCreate(CreateView):
+#     model = Post
+#     fields = ['categories', 'title', 'text']
+#     template_name = 'addpage.html'
+#     success_url = reverse_lazy('home')
+#
+#     def get_context_data(self, *, object_list=None, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context['title'] = 'Добавление статьи'
+#         context['menu'] = menu
+#         return context
+#####
+# def addpage(request):
+#     if request.method == 'POST':
+#         form = AddPostForm(request.POST, request.FILES)
+#         if form.is_valid():
+#             #print(form.cleaned_data)
+#             form.save()
+#             return redirect('home')
+#     else:
+#         form = AddPostForm()
+#     return render(request, 'addpage.html', {'form': form, 'menu': menu, 'title': 'Добавление статьи'})
+#
 
 class ArticleCreate(CreateView):
     model = Post
@@ -133,19 +182,16 @@ class ArticleCreate(CreateView):
         return super(ArticleCreate, self).form_valid(form)
 
 class PostFormView(UpdateView):
+    permission_required = ('simpleapp.change_post',)
+    form_class = PostForm
     model = Post
-    fields = [
-        "authors",
-        "title",
-        "text"
-    ]
-    success_url = reverse_lazy('authors:posts')
-
+    template_name = 'post_edit.html'
 
 class PostDeleteView(DeleteView):
+    permission_required = ('simpleapp.delete_post',)
     model = Post
-    success_url = reverse_lazy('authors:posts')
-    template_name = "authors/confirm_delete.html"
+    template_name = 'post_delete.html'
+    success_url = reverse_lazy('post_list')
 
 class Post(View):
     model = Post
