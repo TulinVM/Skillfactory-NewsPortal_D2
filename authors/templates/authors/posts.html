@@ -25,7 +25,7 @@ Posts
 {% endif %}
 
     </p>
-<br> {{post.created_at|date:'d M Y'}} <br> {{ post.text|truncatechars:40|my_censor }}
+<br> {{post.created_at|date:'d M Y'}} <br> {{ post.text|truncatechars:240|my_censor }}
 
 <hr>
 {% endfor %}

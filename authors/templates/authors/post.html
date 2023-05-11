@@ -15,4 +15,5 @@ Post {{post.title|my_censor}} - type {{ post.type }}
 {% for category in post.categories.all %}
 <span>{{category.name}}</span>
 {% endfor %}
+{{post.content|linebreaks}}
 {% endblock content %}
